@@ -1,0 +1,92 @@
+name: Release
+
+# 说明：
+#   - 现在只有手动触发（workflow_dispatch），用于验证构建/打包。
+#   - SignPath Foundation 审核通过、并配好仓库变量后，取消下面 push 两行的注释，
+#     推 tag（v1.0.4、v1.0.5 ...）就会自动构建 → 签名 → 发布 Release。
+on:
+  workflow_dispatch:
+  # push:
+  #   tags: ['v*']
+
+permissions:
+  contents: write   # 创建 Release
+  actions: read     # 让 SignPath action 读取 workflow artifact
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}"
+          if (-not $ver -or $ver -eq 'main') { $ver = 'dev' }
+          $ver = $ver.TrimStart('v')
+          "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item dist\BatterySentinel\BatterySentinel.exe release\
+          Copy-Item README.md, 使用说明.md, LICENSE release\
+          Copy-Item docs release\docs -Recurse
+          Remove-Item release\docs\crop-about.png -ErrorAction SilentlyContinue
+
+          $zip = "BatterySentinel-$ver-win64.zip"
+          Remove-Item $zip -ErrorAction SilentlyContinue
+          Compress-Archive -Path release\* -DestinationPath $zip
+          Get-FileHash $zip -Algorithm SHA256 |
+            ForEach-Object { "SHA256 ($zip) = " + $_.Hash.ToLower() } |
+            Out-File sha256.txt -Encoding ascii
+          Get-Content sha256.txt
+
+      - name: Upload unsigned artifact
+        id: unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned
+          path: BatterySentinel-*-win64.zip
+
+      # 变量为空时跳过签名，仍然产出未签名包（审核期间也能发版）
+      - name: Sign with SignPath
+        id: sign
+        if: ${{ vars.SIGNPATH_PROJECT_SLUG != '' }}
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIG_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      - name: Prefer signed artifact
+        shell: pwsh
+        run: |
+          if (Test-Path signed) {
+            $signedZip = Get-ChildItem signed -Recurse -Filter *.zip | Select-Object -First 1
+            if ($signedZip) {
+              Copy-Item $signedZip.FullName "BatterySentinel-$env:VERSION-win64.zip" -Force
+              Write-Host "使用签名后的产物：$($signedZip.Name)"
+            }
+          }
+          Get-ChildItem *.zip | Format-Table Name, Length
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: 电量哨兵 v${{ env.VERSION }}
+          body_path: .github/RELEASE_BODY.md
+          files: |
+            BatterySentinel-*-win64.zip
+            sha256.txt

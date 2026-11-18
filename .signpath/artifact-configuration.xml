@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath 制品配置：签名 release zip 里的 BatterySentinel.exe。
+
+  结构说明：
+    - 上传到 SignPath 的制品是 BatterySentinel-<version>-win64.zip
+    - zip 根目录下有 BatterySentinel.exe（见 .github/workflows/release.yml 的 Package 步骤）
+    - 只对 exe 做 Authenticode 签名，zip 里其它文件（说明/截图）原样保留
+
+  在 SignPath 控制台把这个文件上传为 Artifact Configuration，
+  slug 建议用：release-zip（对应仓库变量 SIGNPATH_ARTIFACT_CONFIG_SLUG）
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="BatterySentinel.exe">
+      <authenticode-sign/>
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

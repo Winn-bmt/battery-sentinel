@@ -151,3 +151,9 @@ MIT License，见 [LICENSE](LICENSE)。
 - 最新版本：[Releases](https://github.com/Winn-bmt/battery-sentinel/releases)
 - 源码：本仓库（42 个源文件 + 构建脚本 + 截图）
 
+
+## 代码签名
+
+计划通过 [SignPath Foundation](https://signpath.org/) 为开源项目提供免费 Authenticode 签名。
+构建与签名流程（GitHub Actions + 制品配置）见 [SIGNPATH.md](SIGNPATH.md)。
+
