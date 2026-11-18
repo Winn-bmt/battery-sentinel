@@ -1,0 +1,18 @@
+# 构建产物
+dist/
+bin/
+obj/
+*.exe
+*.pdb
+*.ilk
+*.obj
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# 临时
+*.tmp
+*.log
