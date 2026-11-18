@@ -142,3 +142,6 @@ tests\HidHarness.cs     HID 读取回归测试（对照真机报文）
 
 MIT License，见 [LICENSE](LICENSE)。
 
+
+版本变更见 [CHANGELOG.md](CHANGELOG.md)。
+
