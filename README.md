@@ -145,3 +145,9 @@ MIT License，见 [LICENSE](LICENSE)。
 
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
+
+## 下载
+
+- 最新版本：[Releases](https://github.com/Winn-bmt/battery-sentinel/releases)
+- 源码：本仓库（42 个源文件 + 构建脚本 + 截图）
+
